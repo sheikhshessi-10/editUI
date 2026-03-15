@@ -101,5 +101,31 @@ export function useVoiceoverPlayer() {
     }
   }, []);
 
-  return { isPlaying, currentTimeS, durationS, isReady, play, pause, seek, skipToStart };
+  /**
+   * Fallback: load directly from a File object (e.g. from <input type="file">).
+   * Use this when the project folder hasn't been opened this session.
+   */
+  const loadFromFile = useCallback((file: File) => {
+    if (objUrlRef.current) {
+      URL.revokeObjectURL(objUrlRef.current);
+      objUrlRef.current = null;
+    }
+
+    const url = URL.createObjectURL(file);
+    objUrlRef.current = url;
+
+    if (!audioRef.current) audioRef.current = new Audio();
+    const el = audioRef.current;
+
+    el.onloadedmetadata = () => { setDurationS(el.duration); setIsReady(true); };
+    el.ontimeupdate = () => setCurrentTimeS(el.currentTime);
+    el.onplay  = () => setIsPlaying(true);
+    el.onpause = () => setIsPlaying(false);
+    el.onended = () => setIsPlaying(false);
+
+    el.src = url;
+    el.load();
+  }, []);
+
+  return { isPlaying, currentTimeS, durationS, isReady, play, pause, seek, skipToStart, loadFromFile };
 }

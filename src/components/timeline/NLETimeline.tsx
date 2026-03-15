@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, type PointerEvent as RPointerEvent, type MouseEvent as RMouseEvent } from "react";
+import { useRef, useState, useCallback, useId, type PointerEvent as RPointerEvent, type MouseEvent as RMouseEvent } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useShallow } from "zustand/react/shallow";
 import { X, ZoomIn, ZoomOut, Sparkles, Volume2, Music, Zap, ChevronDown, Play, Pause, SkipBack } from "lucide-react";
@@ -69,7 +69,8 @@ export function NLETimeline() {
   const { setNodeRef: dropRef, isOver } = useDroppable({ id: "timeline-drop" });
 
   // ── Voiceover playback ──────────────────────────────────────────
-  const { isPlaying, currentTimeS, durationS, isReady, play, pause, seek, skipToStart } = useVoiceoverPlayer();
+  const { isPlaying, currentTimeS, durationS, isReady, play, pause, seek, skipToStart, loadFromFile } = useVoiceoverPlayer();
+  const fileInputId = useId();
   const playheadX = currentTimeS * pps;
 
   // Click on ruler to seek
@@ -166,11 +167,29 @@ export function NLETimeline() {
               {durationS != null ? fmtTime(durationS) : "--:--.-"}
             </span>
 
-            {/* Hint when folder not opened this session */}
+            {/* When folder handle is unavailable, let user pick the file directly */}
             {!isReady && (
-              <span className="text-[9px] text-zinc-600 italic">
-                (open project folder to enable)
-              </span>
+              <>
+                <input
+                  id={fileInputId}
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) loadFromFile(file);
+                    // Reset so same file can be picked again if needed
+                    e.target.value = "";
+                  }}
+                />
+                <label
+                  htmlFor={fileInputId}
+                  className="cursor-pointer rounded border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                  title="Pick the voiceover audio file to enable playback"
+                >
+                  Pick file…
+                </label>
+              </>
             )}
           </>
         ) : (
