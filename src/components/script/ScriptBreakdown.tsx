@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronRight, ChevronLeft, ChevronsRight, Plus, ChevronDown } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { useStore, findClosestWord } from "../../store/useStore";
+import { useStore } from "../../store/useStore";
 import { MOLD_REGISTRY, MOLD_GROUPS } from "../../data/moldRegistry";
 import { MoldSwapPicker } from "../shared/MoldSwapPicker";
 import type { Segment, WhisperWord } from "../../data/types";
@@ -45,7 +45,7 @@ export function ScriptBreakdown() {
 
   const activeSegId = selectedType === "segment" ? selectedId : null;
 
-  function handleWordClick(word: WhisperWord, wordIndex: number) {
+  function handleWordClick(word: WhisperWord, _wordIndex: number) {
     if (!activeSegId) return;
     const seg = segments.find(s => s.id === activeSegId);
     if (!seg) return;
@@ -296,8 +296,8 @@ export function ScriptBreakdown() {
 
 /* ─── Insert Button + Mold Picker ───────────────────────────────── */
 
-function InsertButton({ insertIndex, isOpen, onToggle, onPickMold }: {
-  insertIndex: number;
+function InsertButton({ isOpen, onToggle, onPickMold }: {
+  insertIndex?: number;
   isOpen: boolean;
   onToggle: () => void;
   onPickMold: (moldId: string) => void;

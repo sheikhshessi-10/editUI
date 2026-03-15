@@ -1,12 +1,12 @@
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useStore } from "./store/useStore";
 import { MOLD_REGISTRY } from "./data/moldRegistry";
 import { AppLayout } from "./components/layout/AppLayout";
 import { TopBar } from "./components/layout/TopBar";
 import { StatusBar } from "./components/layout/StatusBar";
 import { MoldLibraryPanel } from "./components/mold-library/MoldLibraryPanel";
+import { AudioLibraryPanel } from "./components/audio/AudioLibraryPanel";
 import { NLETimeline } from "./components/timeline/NLETimeline";
 import { ScriptBreakdown } from "./components/script/ScriptBreakdown";
 import { InspectorPanel } from "./components/inspector/InspectorPanel";
@@ -46,6 +46,7 @@ export default function App() {
       <AppLayout
         topBar={<TopBar />}
         moldLibrary={<MoldLibraryPanel />}
+        audioLibrary={<AudioLibraryPanel />}
         nleTimeline={<NLETimeline />}
         scriptBreakdown={<ScriptBreakdown />}
         inspector={<InspectorPanel />}
