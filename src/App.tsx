@@ -5,7 +5,7 @@ import { MOLD_REGISTRY } from "./data/moldRegistry";
 import { AppLayout } from "./components/layout/AppLayout";
 import { TopBar } from "./components/layout/TopBar";
 import { StatusBar } from "./components/layout/StatusBar";
-import { MoldLibraryPanel } from "./components/mold-library/MoldLibraryPanel";
+import { MediaLibraryPanel } from "./components/layout/MediaLibraryPanel";
 import { NLETimeline } from "./components/timeline/NLETimeline";
 import { ScriptBreakdown } from "./components/script/ScriptBreakdown";
 import { InspectorPanel } from "./components/inspector/InspectorPanel";
@@ -44,7 +44,7 @@ export default function App() {
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <AppLayout
         topBar={<TopBar />}
-        moldLibrary={<MoldLibraryPanel />}
+        moldLibrary={<MediaLibraryPanel />}
         nleTimeline={<NLETimeline />}
         scriptBreakdown={<ScriptBreakdown />}
         inspector={<InspectorPanel />}
