@@ -34,7 +34,7 @@ function extractFilename(path: string): string {
   return parts[parts.length - 1];
 }
 
-function buildAssetDescription(spec: AssetSpec, moldId: string): string {
+function buildAssetDescription(spec: AssetSpec, _moldId: string): string {
   const parts: string[] = [spec.label];
   if (spec.note) parts.push(spec.note);
   if (spec.isContin) parts.push("Continuous asset — uses startFrom.");

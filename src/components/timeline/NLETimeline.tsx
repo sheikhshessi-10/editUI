@@ -1,11 +1,12 @@
 import { useRef, useState, useCallback, type PointerEvent as RPointerEvent, type MouseEvent as RMouseEvent } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useShallow } from "zustand/react/shallow";
-import { X, ZoomIn, ZoomOut, Sparkles, Volume2, Music, Zap, ChevronDown } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Sparkles, Volume2, Music, Zap, ChevronDown, Play, Pause, SkipBack } from "lucide-react";
 import { useStore } from "../../store/useStore";
 import { MOLD_REGISTRY } from "../../data/moldRegistry";
-import { EXTRA_VFX_OPTIONS, LIGHT_LEAK_OPTIONS } from "../../data/transitionRegistry";
+import { EXTRA_VFX_OPTIONS } from "../../data/transitionRegistry";
 import { MoldSwapPicker } from "../shared/MoldSwapPicker";
+import { useVoiceoverPlayer } from "../../hooks/useVoiceoverPlayer";
 import type { Segment, Transition, ExtraVFX, WhisperWord } from "../../data/types";
 
 const RULER_H = 26;
@@ -16,12 +17,14 @@ const FX_TRACK_H = 32;
 const LABEL_W = 84;
 const MIN_PPS = 30;
 const MAX_PPS = 300;
-const RESIZE_ZONE = 8;
+
+/** Total height of all scrollable track rows — used for the playhead line height. */
+const TRACKS_H = RULER_H + V_TRACK_H + T_TRACK_H + A_TRACK_H + FX_TRACK_H;
 
 function fmtTime(s: number) {
   const m = Math.floor(s / 60);
   const sec = s - m * 60;
-  return m > 0 ? `${m}:${sec.toFixed(1).padStart(4, "0")}` : `${sec.toFixed(1)}s`;
+  return `${m}:${sec.toFixed(1).padStart(4, "0")}`;
 }
 
 function wordAtTime(words: WhisperWord[], t: number, edge: "start" | "end"): WhisperWord | null {
@@ -65,6 +68,19 @@ export function NLETimeline() {
 
   const { setNodeRef: dropRef, isOver } = useDroppable({ id: "timeline-drop" });
 
+  // ── Voiceover playback ──────────────────────────────────────────
+  const { isPlaying, currentTimeS, durationS, isReady, play, pause, seek, skipToStart } = useVoiceoverPlayer();
+  const playheadX = currentTimeS * pps;
+
+  // Click on ruler to seek
+  const handleRulerSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isReady) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft ?? 0);
+    seek(Math.max(0, x / pps));
+  }, [isReady, pps, seek]);
+
+  // ── Timeline ─────────────────────────────────────────────────────
   const lastEnd = segments.length > 0 ? segments[segments.length - 1].endTimeS : 0;
   const totalDuration = Math.max(lastEnd + 5, 30);
   const totalWidth = totalDuration * pps;
@@ -90,7 +106,7 @@ export function NLETimeline() {
     setPreviewEnd(null);
   }, [resize, previewEnd, resizeSegmentEnd]);
 
-  const audioFiles = availableFiles.filter(f => /\.(mp3|wav|ogg)$/i.test(f));
+  const audioFiles = availableFiles.filter(f => /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(f));
 
   return (
     <div
@@ -98,18 +114,76 @@ export function NLETimeline() {
       onPointerMove={onPointerMoveGlobal}
       onPointerUp={onPointerUpGlobal}
     >
-      {/* Zoom controls */}
+      {/* ── Top toolbar: zoom + transport ───────────────────────── */}
       <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-2 py-1">
-        <button onClick={() => setPps(p => Math.max(MIN_PPS, p - 10))} className="rounded p-0.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"><ZoomOut size={14} /></button>
+        {/* Zoom */}
+        <button
+          onClick={() => setPps(p => Math.max(MIN_PPS, p - 10))}
+          className="rounded p-0.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+        >
+          <ZoomOut size={14} />
+        </button>
         <span className="text-[10px] text-zinc-500 tabular-nums">{pps}px/s</span>
-        <button onClick={() => setPps(p => Math.min(MAX_PPS, p + 10))} className="rounded p-0.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"><ZoomIn size={14} /></button>
+        <button
+          onClick={() => setPps(p => Math.min(MAX_PPS, p + 10))}
+          className="rounded p-0.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+        >
+          <ZoomIn size={14} />
+        </button>
+
+        {/* Divider */}
+        <div className="h-4 w-px bg-zinc-700" />
+
+        {/* Transport controls — only shown when a voiceover file is selected */}
+        {audio.voiceoverFile ? (
+          <>
+            {/* Skip to start */}
+            <button
+              onClick={skipToStart}
+              title="Skip to start"
+              className="rounded p-0.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!isReady}
+            >
+              <SkipBack size={14} />
+            </button>
+
+            {/* Play / Pause */}
+            <button
+              onClick={isPlaying ? pause : play}
+              title={isPlaying ? "Pause" : "Play voiceover"}
+              className="flex items-center justify-center rounded bg-emerald-600 p-1 text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!isReady}
+            >
+              {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+            </button>
+
+            {/* Timecode */}
+            <span className="tabular-nums text-[11px] text-zinc-300">
+              {fmtTime(currentTimeS)}
+            </span>
+            <span className="text-[11px] text-zinc-600">/</span>
+            <span className="tabular-nums text-[11px] text-zinc-500">
+              {durationS != null ? fmtTime(durationS) : "--:--.-"}
+            </span>
+
+            {/* Hint when folder not opened this session */}
+            {!isReady && (
+              <span className="text-[9px] text-zinc-600 italic">
+                (open project folder to enable)
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-[10px] text-zinc-700 italic">No voiceover selected</span>
+        )}
+
         <div className="flex-1" />
         <span className="text-[10px] text-zinc-600">{fmtTime(lastEnd)} total</span>
       </div>
 
-      {/* Track area */}
+      {/* ── Track area ──────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Track labels */}
+        {/* Track labels (fixed left column) */}
         <div className="shrink-0 border-r border-zinc-800 bg-zinc-900" style={{ width: LABEL_W }}>
           <div style={{ height: RULER_H }} className="border-b border-zinc-800" />
           <TrackLabel h={V_TRACK_H} icon="V1" color="#4ECDC4">Video</TrackLabel>
@@ -118,15 +192,25 @@ export function NLETimeline() {
           <TrackLabel h={FX_TRACK_H} icon="FX" color="#A29BFE">Effects</TrackLabel>
         </div>
 
-        {/* Scrollable content */}
-        <div ref={(el) => { scrollRef.current = el; dropRef(el); }} className="flex-1 overflow-x-auto overflow-y-hidden" style={{ background: isOver ? "rgba(16,185,129,0.03)" : undefined }}>
+        {/* Scrollable track content */}
+        <div
+          ref={(el) => { scrollRef.current = el; dropRef(el); }}
+          className="flex-1 overflow-x-auto overflow-y-hidden"
+          style={{ background: isOver ? "rgba(16,185,129,0.03)" : undefined }}
+        >
           <div style={{ width: totalWidth, minWidth: "100%", position: "relative" }}>
-            {/* Ruler */}
-            <Ruler totalWidth={totalWidth} pps={pps} height={RULER_H} />
 
-            {/* V1 - Video track */}
+            {/* Ruler — click anywhere to seek */}
+            <div
+              onClick={handleRulerSeek}
+              className={isReady ? "cursor-pointer" : "cursor-default"}
+              title={isReady ? "Click to seek" : undefined}
+            >
+              <Ruler totalWidth={totalWidth} pps={pps} height={RULER_H} />
+            </div>
+
+            {/* V1 — Video track */}
             <div className="relative border-b border-zinc-800/60" style={{ height: V_TRACK_H, background: "rgba(9,9,11,0.6)" }}>
-              {/* Second grid lines */}
               <GridLines totalWidth={totalWidth} pps={pps} height={V_TRACK_H} />
               {segments.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center text-[11px] text-zinc-700 pointer-events-none">
@@ -154,7 +238,7 @@ export function NLETimeline() {
               })}
             </div>
 
-            {/* T1 - Transitions track */}
+            {/* T1 — Transitions track */}
             <div className="relative border-b border-zinc-800/60" style={{ height: T_TRACK_H, background: "rgba(9,9,11,0.4)" }}>
               <GridLines totalWidth={totalWidth} pps={pps} height={T_TRACK_H} />
               {transitions.map((t, i) => {
@@ -173,7 +257,7 @@ export function NLETimeline() {
               })}
             </div>
 
-            {/* A1 - Audio track */}
+            {/* A1 — Audio track */}
             <div className="relative border-b border-zinc-800/60" style={{ height: A_TRACK_H, background: "rgba(9,9,11,0.3)" }}>
               <GridLines totalWidth={totalWidth} pps={pps} height={A_TRACK_H} />
               <AudioBar
@@ -185,7 +269,7 @@ export function NLETimeline() {
               />
             </div>
 
-            {/* FX - Effects track */}
+            {/* FX — Effects track */}
             <div className="relative" style={{ height: FX_TRACK_H, background: "rgba(9,9,11,0.2)" }}>
               <GridLines totalWidth={totalWidth} pps={pps} height={FX_TRACK_H} />
               {extraVfx.map(vfx => (
@@ -200,10 +284,32 @@ export function NLETimeline() {
               ))}
               <div className="absolute right-2 top-1 flex gap-1">
                 {EXTRA_VFX_OPTIONS.map(opt => (
-                  <button key={opt.id} onClick={() => addExtraVFX(opt.id)} className="rounded bg-zinc-800/80 px-1.5 py-0.5 text-[8px] text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300">+{opt.label.split(" ")[0]}</button>
+                  <button
+                    key={opt.id}
+                    onClick={() => addExtraVFX(opt.id)}
+                    className="rounded bg-zinc-800/80 px-1.5 py-0.5 text-[8px] text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  >
+                    +{opt.label.split(" ")[0]}
+                  </button>
                 ))}
               </div>
             </div>
+
+            {/* ── Playhead ──────────────────────────────────────── */}
+            {(isReady || currentTimeS > 0) && (
+              <div
+                className="pointer-events-none absolute top-0 z-30 w-px"
+                style={{
+                  left: playheadX,
+                  height: TRACKS_H,
+                  background: "rgb(16 185 129)",
+                }}
+              >
+                {/* Triangle caret at the top */}
+                <div className="absolute -left-[5px] top-0 h-0 w-0 border-l-[5px] border-r-[5px] border-t-[7px] border-l-transparent border-r-transparent border-t-emerald-500" />
+              </div>
+            )}
+
           </div>
         </div>
       </div>
@@ -255,7 +361,12 @@ function GridLines({ totalWidth, pps, height }: { totalWidth: number; pps: numbe
   const totalSec = totalWidth / pps;
   const step = pps >= 60 ? 1 : pps >= 30 ? 2 : 5;
   for (let s = 0; s <= totalSec; s += step) {
-    lines.push(<div key={s} className="absolute top-0 w-px" style={{ left: s * pps, height, background: s % 5 === 0 ? "rgba(63,63,70,0.5)" : "rgba(63,63,70,0.2)" }} />);
+    lines.push(
+      <div key={s} className="absolute top-0 w-px" style={{
+        left: s * pps, height,
+        background: s % 5 === 0 ? "rgba(63,63,70,0.5)" : "rgba(63,63,70,0.2)"
+      }} />
+    );
   }
   return <>{lines}</>;
 }
@@ -285,16 +396,9 @@ function SegmentClip({ seg, index, pps, effectiveEnd, selected, words, isResizin
   return (
     <div
       className={`group absolute top-[3px] flex cursor-pointer items-stretch rounded-[4px] border-l-[3px] transition-shadow ${selected ? "ring-1 ring-white/40" : ""} ${isResizing ? "z-20" : ""}`}
-      style={{
-        left,
-        width,
-        height: V_TRACK_H - 6,
-        borderLeftColor: moldColor,
-        background: `${moldColor}22`,
-      }}
+      style={{ left, width, height: V_TRACK_H - 6, borderLeftColor: moldColor, background: `${moldColor}22` }}
       onClick={onSelect}
     >
-      {/* Content */}
       <div className="flex flex-1 flex-col justify-between overflow-hidden px-1.5 py-1">
         <div className="flex items-center gap-1">
           <button
@@ -312,25 +416,15 @@ function SegmentClip({ seg, index, pps, effectiveEnd, selected, words, isResizin
           {seg.startWord && <span className="text-[8px] text-zinc-600">"{seg.startWord.word}"</span>}
         </div>
       </div>
-
-      {/* Right edge: end word label */}
       <div className="flex shrink-0 flex-col items-end justify-center border-l border-zinc-700/40 px-1">
-        {endWord && (
-          <span className="max-w-[60px] truncate text-[8px] font-medium" style={{ color: moldColor }}>
-            "{endWord.word}"
-          </span>
-        )}
+        {endWord && <span className="max-w-[60px] truncate text-[8px] font-medium" style={{ color: moldColor }}>"{endWord.word}"</span>}
         <span className="text-[8px] tabular-nums text-zinc-600">{effectiveEnd.toFixed(2)}s</span>
       </div>
-
-      {/* Resize handle (right edge) */}
       <div
         className="absolute right-0 top-0 h-full w-[7px] cursor-col-resize opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-60"
         style={{ background: `linear-gradient(to right, transparent, ${moldColor}80)` }}
         onPointerDown={onResizeStart}
       />
-
-      {/* Remove */}
       <button
         onClick={e => { e.stopPropagation(); onRemove(); }}
         className="absolute -right-1 -top-1 hidden rounded-full bg-zinc-800 p-0.5 text-zinc-500 hover:text-red-400 group-hover:block"
@@ -375,7 +469,6 @@ function AudioBar({ audio, setAudio, audioFiles, pps, totalDuration }: {
   const barWidth = Math.max(100, totalDuration * pps);
   return (
     <>
-      {/* BG music bar - full width */}
       <div
         className="absolute top-[3px] flex items-center gap-1.5 rounded-[3px] border border-blue-500/20 bg-blue-500/10 px-2"
         style={{ left: 0, width: barWidth, height: A_TRACK_H - 6 }}
@@ -400,6 +493,7 @@ function AudioBar({ audio, setAudio, audioFiles, pps, totalDuration }: {
         />
         <span className="text-[8px] tabular-nums text-amber-400">{audio.wooshVolume.toFixed(2)}</span>
         <div className="mx-1 h-3 w-px bg-blue-500/20" />
+        {/* Voiceover file selector */}
         <select
           value={audio.voiceoverFile ?? ""}
           onChange={e => setAudio({ voiceoverFile: e.target.value || null })}
@@ -431,7 +525,9 @@ function VFXMarker({ vfx, pps, selected, onSelect, onRemove }: {
     >
       <Sparkles size={9} className="shrink-0 text-purple-400" />
       <span className="truncate text-[8px] text-zinc-400">{vfx.type}</span>
-      <button onClick={e => { e.stopPropagation(); onRemove(); }} className="ml-auto shrink-0 text-zinc-600 hover:text-red-400"><X size={8} /></button>
+      <button onClick={e => { e.stopPropagation(); onRemove(); }} className="ml-auto shrink-0 text-zinc-600 hover:text-red-400">
+        <X size={8} />
+      </button>
     </div>
   );
 }

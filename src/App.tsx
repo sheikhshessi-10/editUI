@@ -1,6 +1,5 @@
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useStore } from "./store/useStore";
 import { MOLD_REGISTRY } from "./data/moldRegistry";
 import { AppLayout } from "./components/layout/AppLayout";

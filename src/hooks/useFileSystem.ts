@@ -2,6 +2,20 @@ import { useCallback } from "react";
 import { useStore } from "../store/useStore";
 import { parseWhisperJSON } from "../utils/whisperParser";
 
+// Module-level handle — survives component re-renders, lost on page reload.
+// This lets any hook/component resolve filenames → actual File objects.
+let _projectDirHandle: FileSystemDirectoryHandle | null = null;
+
+export async function getProjectFile(filename: string): Promise<File | null> {
+  if (!_projectDirHandle) return null;
+  try {
+    const fh = await (_projectDirHandle as any).getFileHandle(filename);
+    return await fh.getFile();
+  } catch {
+    return null;
+  }
+}
+
 export function useFileSystem() {
   const loadProject = useStore(s => s.loadProject);
 
@@ -13,6 +27,7 @@ export function useFileSystem() {
 
     try {
       const dirHandle = await (window as any).showDirectoryPicker();
+      _projectDirHandle = dirHandle;
       const files: string[] = [];
       let whisperJSON: Record<string, unknown> | null = null;
 

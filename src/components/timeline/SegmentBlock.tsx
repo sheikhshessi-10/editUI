@@ -13,7 +13,7 @@ interface Props {
   index: number;
 }
 
-export function SegmentBlock({ segment, index }: Props) {
+export function SegmentBlock({ segment, index: _index }: Props) {
   const { select, removeSegment, selectedId } = useStore(useShallow(s => ({
     select: s.select,
     removeSegment: s.removeSegment,
@@ -45,17 +45,14 @@ export function SegmentBlock({ segment, index }: Props) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...attributes}
       onClick={() => select("segment", segment.id)}
       className={`group relative flex cursor-pointer flex-col rounded-lg border-l-4 p-2 transition ${isDragging ? "z-50 opacity-60" : ""} ${selected ? "ring-2 ring-zinc-400 ring-offset-1 ring-offset-zinc-950" : ""}`}
-      {...({
-        style: {
-          ...style,
-          borderLeftColor: mold?.color ?? "#666",
-          backgroundColor: `${mold?.color ?? "#666"}20`,
-        },
-      })}
+      style={{
+        ...style,
+        borderLeftColor: mold?.color ?? "#666",
+        backgroundColor: `${mold?.color ?? "#666"}20`,
+      }}
     >
       {/* Drag handle */}
       <div
