@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { Segment, Transition, ExtraVFX, AudioConfig, SelectionType, WhisperWord, AssetKey, AssetTiming, ExtraVFXType } from "../data/types";
 import { MOLD_REGISTRY } from "../data/moldRegistry";
 import { FIXED_MORPHS } from "../data/transitionRegistry";
@@ -124,7 +123,7 @@ interface AppState {
   clearProject(): void;
 }
 
-export const useStore = create<AppState>()(persist((set, get) => ({
+export const useStore = create<AppState>()((set, get) => ({
   projectFolderName: "",
   videoId: "",
   whisperWords: [],
@@ -436,31 +435,5 @@ export const useStore = create<AppState>()(persist((set, get) => ({
       selectedType: null,
       selectedId: null,
     });
-  },
-}), {
-  name: "video-assembly-editor",
-  partialize: (state) => ({
-    projectFolderName: state.projectFolderName,
-    videoId: state.videoId,
-    whisperWords: state.whisperWords,
-    availableFiles: state.availableFiles,
-    segments: state.segments,
-    transitions: state.transitions,
-    extraVfx: state.extraVfx,
-    audio: state.audio,
-  }),
-  merge: (persisted, current) => {
-    const stored = persisted as Partial<AppState> | undefined;
-    if (!stored) return current;
-    const segments = (stored.segments ?? []).map((s: any) => ({
-      ...s,
-      assetTiming: s.assetTiming ?? {},
-      assets: s.assets ?? {},
-    })) as Segment[];
-    return {
-      ...current,
-      ...stored,
-      segments,
-    };
   },
 }));

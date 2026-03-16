@@ -11,6 +11,25 @@ const makeDefaultTracks = (): AudioTrack[] => [
   { id: "track-sfx",  name: "SFX",       muted: false, solo: false, volume: 0.8, clips: [] },
 ];
 
+// ── File cache (module-level, not serialized) ─────────────────────────────────
+// Stores the actual File blobs by audioId for upload tracking
+const fileCache = new Map<string, File>();
+const uploadedSet = new Set<string>();
+
+export function getPendingFiles(): Map<string, File> {
+  const pending = new Map<string, File>();
+  for (const [id, file] of fileCache.entries()) {
+    if (!uploadedSet.has(id)) pending.set(id, file);
+  }
+  return pending;
+}
+
+export function markUploaded(audioId: string): void {
+  uploadedSet.add(audioId);
+}
+
+// ── Store ─────────────────────────────────────────────────────────────────────
+
 interface AudioState {
   importedAudios: ImportedAudio[];
   tracks: AudioTrack[];
@@ -41,6 +60,10 @@ interface AudioState {
   pause: () => void;
   stop: () => void;
   setPlayheadTime: (t: number) => void;
+
+  // ── Project load/reset ────────────────────────────────────────────────────
+  loadAudioState: (data: { importedAudios: ImportedAudio[]; tracks: AudioTrack[] }) => void;
+  resetAudioState: () => void;
 }
 
 export const useAudioStore = create<AudioState>()((set, get) => {
@@ -61,11 +84,15 @@ export const useAudioStore = create<AudioState>()((set, get) => {
 
     async importAudio(file) {
       const { id, durationS } = await audioEngine.importFile(file);
+      // Store File blob for pending upload tracking
+      fileCache.set(id, file);
       const audio: ImportedAudio = { id, name: file.name, durationS };
       set((s) => ({ importedAudios: [...s.importedAudios, audio] }));
     },
 
     removeImportedAudio(id) {
+      fileCache.delete(id);
+      uploadedSet.delete(id);
       set((s) => ({
         importedAudios: s.importedAudios.filter((a) => a.id !== id),
         tracks: s.tracks.map((t) => ({
@@ -194,6 +221,34 @@ export const useAudioStore = create<AudioState>()((set, get) => {
       const clamped = Math.max(0, t);
       set({ playheadTime: clamped });
       audioEngine.seek(clamped);
+    },
+
+    // ── Project load/reset ────────────────────────────────────────
+
+    loadAudioState(data) {
+      set({
+        importedAudios: data.importedAudios,
+        tracks: data.tracks,
+        playheadTime: 0,
+        isPlaying: false,
+        selectedClipId: null,
+      });
+    },
+
+    resetAudioState() {
+      // Stop playback and clear engine buffers
+      audioEngine.clearBuffers();
+      // Clear file tracking
+      fileCache.clear();
+      uploadedSet.clear();
+      // Reset store
+      set({
+        importedAudios: [],
+        tracks: makeDefaultTracks(),
+        playheadTime: 0,
+        isPlaying: false,
+        selectedClipId: null,
+      });
     },
   };
 });
