@@ -179,3 +179,27 @@ export async function loadProject(projectId: string): Promise<LoadedProject> {
 
   return { stateJson, audioState, audioFiles };
 }
+
+// ── Frame thumbnails ──────────────────────────────────────────────────────────
+
+export async function uploadFrameThumbnail(
+  projectId: string,
+  segId: string,
+  file: File,
+): Promise<string> {
+  const userId = await ensureAuth();
+  const path = `${userId}/${projectId}/thumbs/${segId}`;
+  const { error } = await supabase.storage
+    .from("audio-files")
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+  return path;
+}
+
+export async function getFrameThumbnailUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from("audio-files")
+    .createSignedUrl(path, 3600); // 1-hour signed URL
+  if (error) throw error;
+  return data.signedUrl;
+}

@@ -96,6 +96,9 @@ interface AppState {
   selectedType: SelectionType;
   selectedId: string | null;
 
+  frameThumbnails: Record<string, string>; // segId → Supabase storage path
+  setFrameThumbnail(segId: string, path: string | null): void;
+
   loadProject(folderName: string, files: string[], whisperWords: WhisperWord[]): void;
   setVideoId(id: string): void;
   addSegment(moldId: string, atIndex?: number): void;
@@ -132,6 +135,7 @@ export const useStore = create<AppState>()((set, get) => ({
   segments: [],
   transitions: [],
   extraVfx: [],
+  frameThumbnails: {},
 
   audio: { voiceoverFile: null, bgMusicVolume: 0.05, wooshVolume: 0.22 },
 
@@ -396,6 +400,7 @@ export const useStore = create<AppState>()((set, get) => ({
       transitions: s.transitions,
       extraVfx: s.extraVfx,
       audio: s.audio,
+      frameThumbnails: s.frameThumbnails,
     };
     return JSON.stringify(data, null, 2);
   },
@@ -413,6 +418,7 @@ export const useStore = create<AppState>()((set, get) => ({
         transitions: data.transitions ?? [],
         extraVfx: data.extraVfx ?? [],
         audio: data.audio ?? { voiceoverFile: null, bgMusicVolume: 0.05, wooshVolume: 0.22 },
+        frameThumbnails: data.frameThumbnails ?? {},
         selectedType: null,
         selectedId: null,
       });
@@ -420,6 +426,14 @@ export const useStore = create<AppState>()((set, get) => ({
       console.error("Failed to import project:", e);
       alert("Invalid project file.");
     }
+  },
+
+  setFrameThumbnail(segId, path) {
+    set(s => {
+      const t = { ...s.frameThumbnails };
+      if (path === null) delete t[segId]; else t[segId] = path;
+      return { frameThumbnails: t };
+    });
   },
 
   clearProject() {
@@ -432,6 +446,7 @@ export const useStore = create<AppState>()((set, get) => ({
       transitions: [],
       extraVfx: [],
       audio: { voiceoverFile: null, bgMusicVolume: 0.05, wooshVolume: 0.22 },
+      frameThumbnails: {},
       selectedType: null,
       selectedId: null,
     });

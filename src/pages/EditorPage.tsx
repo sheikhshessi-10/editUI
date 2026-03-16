@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { Loader2 } from "lucide-react";
+import { BoardView } from "../components/board/BoardView";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store/useStore";
 import { useAudioStore, getPendingFiles, markUploaded } from "../store/useAudioStore";
@@ -28,6 +29,7 @@ export function EditorPage() {
   const [loadingState, setLoadingState] = useState<"loading" | "ready" | "error">("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [viewMode, setViewMode] = useState<"timeline" | "board">("timeline");
 
   // ── Zustand actions (stable references — no shallow needed) ──────────────
   const importProjectJSON = useStore((s) => s.importProjectJSON);
@@ -203,10 +205,33 @@ export function EditorPage() {
     );
   }
 
+  // ── Board view ───────────────────────────────────────────────────────────
+  if (viewMode === "board") {
+    return (
+      <div className="flex flex-col h-screen bg-zinc-950">
+        <TopBar
+          projectId={projectId}
+          saveStatus={saveStatus}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+        <BoardView projectId={projectId!} />
+      </div>
+    );
+  }
+
+  // ── Timeline view (default) ───────────────────────────────────────────────
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <AppLayout
-        topBar={<TopBar projectId={projectId} saveStatus={saveStatus} />}
+        topBar={
+          <TopBar
+            projectId={projectId}
+            saveStatus={saveStatus}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+        }
         moldLibrary={<MediaLibraryPanel />}
         nleTimeline={<NLETimeline />}
         scriptBreakdown={<ScriptBreakdown />}

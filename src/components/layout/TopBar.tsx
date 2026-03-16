@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, FolderOpen, Upload, FilePlus2, Wand2, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Download, FolderOpen, Upload, FilePlus2, Wand2, ArrowLeft, CheckCircle, AlertCircle, Loader2, LayoutTemplate, LayoutGrid } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../store/useStore";
 import { useFileSystem } from "../../hooks/useFileSystem";
@@ -10,9 +10,11 @@ import type { SaveStatus } from "../../pages/EditorPage";
 interface TopBarProps {
   projectId?: string;
   saveStatus?: SaveStatus;
+  viewMode?: "timeline" | "board";
+  onViewModeChange?: (mode: "timeline" | "board") => void;
 }
 
-export function TopBar({ projectId, saveStatus = "idle" }: TopBarProps) {
+export function TopBar({ projectId, saveStatus = "idle", viewMode, onViewModeChange }: TopBarProps) {
   const navigate = useNavigate();
   const {
     videoId, setVideoId, projectFolderName,
@@ -153,6 +155,36 @@ export function TopBar({ projectId, saveStatus = "idle" }: TopBarProps) {
       {/* Save status indicator */}
       {projectId && (
         <SaveIndicator status={saveStatus} />
+      )}
+
+      {/* View mode toggle — only inside a project */}
+      {projectId && onViewModeChange && (
+        <div className="flex rounded-md border border-zinc-700 overflow-hidden shrink-0">
+          <button
+            onClick={() => onViewModeChange("timeline")}
+            className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-medium transition ${
+              viewMode === "timeline"
+                ? "bg-zinc-700 text-zinc-100"
+                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+            }`}
+            title="Timeline view"
+          >
+            <LayoutTemplate size={11} />
+            Timeline
+          </button>
+          <button
+            onClick={() => onViewModeChange("board")}
+            className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-medium transition border-l border-zinc-700 ${
+              viewMode === "board"
+                ? "bg-zinc-700 text-zinc-100"
+                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+            }`}
+            title="Board view"
+          >
+            <LayoutGrid size={11} />
+            Board
+          </button>
+        </div>
       )}
 
       <button
