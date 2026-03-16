@@ -159,29 +159,29 @@ export function TopBar({ projectId, saveStatus = "idle", viewMode, onViewModeCha
 
       {/* View mode toggle — only inside a project */}
       {projectId && onViewModeChange && (
-        <div className="flex rounded-md border border-zinc-700 overflow-hidden shrink-0">
+        <div className="flex rounded-lg border-2 border-zinc-500 overflow-hidden shrink-0 shadow-lg">
           <button
             onClick={() => onViewModeChange("timeline")}
-            className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-medium transition ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold transition ${
               viewMode === "timeline"
-                ? "bg-zinc-700 text-zinc-100"
-                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+                ? "bg-indigo-600 text-white"
+                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
             }`}
             title="Timeline view"
           >
-            <LayoutTemplate size={11} />
+            <LayoutTemplate size={14} />
             Timeline
           </button>
           <button
             onClick={() => onViewModeChange("board")}
-            className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-medium transition border-l border-zinc-700 ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold transition border-l-2 border-zinc-500 ${
               viewMode === "board"
-                ? "bg-zinc-700 text-zinc-100"
-                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+                ? "bg-indigo-600 text-white"
+                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
             }`}
             title="Board view"
           >
-            <LayoutGrid size={11} />
+            <LayoutGrid size={14} />
             Board
           </button>
         </div>
