@@ -45,17 +45,27 @@ class AudioEngine {
 
   // ── Import ───────────────────────────────────────────────────────
 
-  async importFile(file: File): Promise<{ id: string; durationS: number }> {
+  async importFile(file: File, existingId?: string): Promise<{ id: string; durationS: number }> {
     const ctx = this.getCtx();
     const ab = await file.arrayBuffer();
     const buffer = await ctx.decodeAudioData(ab);
-    const id = `aud-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    const id = existingId ?? `aud-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     this.buffers.set(id, buffer);
     return { id, durationS: buffer.duration };
   }
 
   getBuffer(id: string): AudioBuffer | undefined {
     return this.buffers.get(id);
+  }
+
+  clearBuffers(): void {
+    this._isPlaying = false;
+    this.stopSources();
+    this.stopTick();
+    this.playheadStart = 0;
+    this.buffers.clear();
+    this.onPlayingChange?.(false);
+    this.onTimeUpdate?.(0);
   }
 
   // ── Playback ─────────────────────────────────────────────────────

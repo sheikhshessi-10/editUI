@@ -1,11 +1,19 @@
 import { useRef } from "react";
-import { Download, FolderOpen, Save, Upload, FilePlus2, Wand2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Download, FolderOpen, Upload, FilePlus2, Wand2, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../store/useStore";
 import { useFileSystem } from "../../hooks/useFileSystem";
 import { useValidation } from "../../hooks/useValidation";
+import type { SaveStatus } from "../../pages/EditorPage";
 
-export function TopBar() {
+interface TopBarProps {
+  projectId?: string;
+  saveStatus?: SaveStatus;
+}
+
+export function TopBar({ projectId, saveStatus = "idle" }: TopBarProps) {
+  const navigate = useNavigate();
   const {
     videoId, setVideoId, projectFolderName,
     getAssemblyJSON, exportProjectJSON, importProjectJSON, clearProject, autoAssignAssets,
@@ -38,17 +46,6 @@ export function TopBar() {
     URL.revokeObjectURL(url);
   }
 
-  function handleSaveProject() {
-    const json = exportProjectJSON();
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${videoId || "project"}.vae.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function handleLoadProject(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -69,21 +66,36 @@ export function TopBar() {
 
   return (
     <div className="flex items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-4 py-2">
-      <span className="text-sm font-bold tracking-wide text-zinc-100">
-        Video Assembly Editor
-      </span>
+
+      {/* Back to projects — only shown when inside a project */}
+      {projectId ? (
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1.5 text-[10px] font-medium text-zinc-400 transition hover:bg-zinc-700 hover:text-zinc-200"
+          title="Back to all projects"
+        >
+          <ArrowLeft size={12} />
+          Projects
+        </button>
+      ) : (
+        <span className="text-sm font-bold tracking-wide text-zinc-100">
+          Video Assembly Editor
+        </span>
+      )}
 
       <div className="h-4 w-px bg-zinc-700" />
 
       {/* Project actions */}
-      <button
-        onClick={handleNewProject}
-        className="flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1.5 text-[10px] font-medium text-zinc-400 transition hover:bg-zinc-700 hover:text-zinc-200"
-        title="New Project"
-      >
-        <FilePlus2 size={13} />
-        New
-      </button>
+      {!projectId && (
+        <button
+          onClick={handleNewProject}
+          className="flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1.5 text-[10px] font-medium text-zinc-400 transition hover:bg-zinc-700 hover:text-zinc-200"
+          title="New Project"
+        >
+          <FilePlus2 size={13} />
+          New
+        </button>
+      )}
 
       <button
         onClick={openProjectFolder}
@@ -96,23 +108,14 @@ export function TopBar() {
 
       <div className="h-4 w-px bg-zinc-700" />
 
-      {/* Save / Load */}
-      <button
-        onClick={handleSaveProject}
-        className="flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1.5 text-[10px] font-medium text-zinc-400 transition hover:bg-zinc-700 hover:text-zinc-200"
-        title="Save project to .json file"
-      >
-        <Save size={13} />
-        Save
-      </button>
-
+      {/* Load from file (still useful for legacy projects) */}
       <button
         onClick={() => loadInputRef.current?.click()}
         className="flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1.5 text-[10px] font-medium text-zinc-400 transition hover:bg-zinc-700 hover:text-zinc-200"
         title="Load project from .json file"
       >
         <Upload size={13} />
-        Load
+        Import
       </button>
       <input
         ref={loadInputRef}
@@ -147,10 +150,10 @@ export function TopBar() {
 
       <div className="flex-1" />
 
-      {/* Auto-save indicator */}
-      <span className="text-[9px] text-zinc-600" title="State auto-saves to browser storage on every change">
-        auto-saved
-      </span>
+      {/* Save status indicator */}
+      {projectId && (
+        <SaveIndicator status={saveStatus} />
+      )}
 
       <button
         onClick={handleExport}
@@ -162,5 +165,38 @@ export function TopBar() {
         Export assembly.json
       </button>
     </div>
+  );
+}
+
+function SaveIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") {
+    return (
+      <span className="text-[9px] text-zinc-600" title="Auto-saves to cloud on every change">
+        auto-saved
+      </span>
+    );
+  }
+  if (status === "saving") {
+    return (
+      <span className="flex items-center gap-1 text-[9px] text-zinc-400">
+        <Loader2 size={9} className="animate-spin" />
+        Saving…
+      </span>
+    );
+  }
+  if (status === "saved") {
+    return (
+      <span className="flex items-center gap-1 text-[9px] text-emerald-500">
+        <CheckCircle size={9} />
+        Saved ✓
+      </span>
+    );
+  }
+  // error
+  return (
+    <span className="flex items-center gap-1 text-[9px] text-red-400">
+      <AlertCircle size={9} />
+      Save failed
+    </span>
   );
 }
