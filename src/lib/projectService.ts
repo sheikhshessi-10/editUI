@@ -96,10 +96,11 @@ export async function saveProject(
   pendingFiles: Map<string, File>   // audioId → File, only NEW files not yet uploaded
 ): Promise<void> {
   const userId = await ensureAuth();
-  const segmentCount = (() => {
-    try { return (JSON.parse(stateJson).segments ?? []).length; } catch { return 0; }
-  })();
-  const audioCount = audioState.importedAudios.length;
+  const parsed       = (() => { try { return JSON.parse(stateJson); } catch { return {}; } })();
+  const segmentCount = (parsed.segments ?? []).length;
+  const audioCount   = audioState.importedAudios.length;
+  // Use the video ID as the project display name (fallback to "Untitled Project")
+  const projectName  = (parsed.videoId as string | undefined)?.trim() || "Untitled Project";
 
   // Upload any pending audio files
   for (const [audioId, file] of pendingFiles.entries()) {
@@ -122,15 +123,16 @@ export async function saveProject(
     if (rowErr) console.error("Audio row insert failed:", rowErr);
   }
 
-  // Upsert project state
+  // Upsert project state (also keep the display name in sync with the video ID)
   const { error } = await supabase
     .from("projects")
     .update({
-      state_json: JSON.parse(stateJson),
-      audio_state: audioState,
+      name:          projectName,
+      state_json:    parsed,
+      audio_state:   audioState,
       segment_count: segmentCount,
-      audio_count: audioCount,
-      updated_at: new Date().toISOString(),
+      audio_count:   audioCount,
+      updated_at:    new Date().toISOString(),
     })
     .eq("id", projectId)
     .eq("user_id", userId);
