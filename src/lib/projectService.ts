@@ -70,7 +70,7 @@ export async function renameProject(projectId: string, name: string): Promise<vo
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
-  const userId = await ensureAuth();
+  await ensureAuth();
   // Delete storage objects for this project
   const { data: files } = await supabase
     .from("project_audio_files")
@@ -84,8 +84,7 @@ export async function deleteProject(projectId: string): Promise<void> {
   const { error } = await supabase
     .from("projects")
     .delete()
-    .eq("id", projectId)
-    .eq("user_id", userId);
+    .eq("id", projectId);
   if (error) throw error;
 }
 
@@ -134,8 +133,7 @@ export async function saveProject(
       audio_count:   audioCount,
       updated_at:    new Date().toISOString(),
     })
-    .eq("id", projectId)
-    .eq("user_id", userId);
+    .eq("id", projectId);
   if (error) throw error;
 }
 
