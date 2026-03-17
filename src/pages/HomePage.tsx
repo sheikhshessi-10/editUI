@@ -186,7 +186,7 @@ interface CardProps {
   proj: ProjectMeta;
   isEditing: boolean;
   editingName: string;
-  renameInputRef: React.RefObject<HTMLInputElement> | null;
+  renameInputRef: React.RefObject<HTMLInputElement | null> | null;
   onEditNameChange: (v: string) => void;
   onClick: () => void;
   onDoubleClickName: (e: React.MouseEvent) => void;

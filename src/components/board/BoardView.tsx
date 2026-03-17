@@ -128,7 +128,7 @@ export function BoardView({ projectId }: BoardViewProps) {
               ))}
 
               {/* Transition cards */}
-              {transitions.map((trans, i) => {
+              {transitions.map((trans) => {
                 const fromSeg = segments[trans.cutIndex];
                 const toSeg   = segments[trans.cutIndex + 1];
                 if (!fromSeg || !toSeg) return null;

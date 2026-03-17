@@ -56,7 +56,7 @@ export function TransitionModal({ transitionId, onClose }: TransitionModalProps)
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <TransitionInspector />
+          <TransitionInspector transition={transition} index={transition.cutIndex} />
         </div>
       </div>
     </div>

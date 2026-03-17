@@ -18,14 +18,13 @@ export function TopBar({ projectId, saveStatus = "idle", viewMode, onViewModeCha
   const navigate = useNavigate();
   const {
     videoId, setVideoId, projectFolderName,
-    getAssemblyJSON, exportProjectJSON, importProjectJSON, clearProject, autoAssignAssets,
+    getAssemblyJSON, importProjectJSON, clearProject, autoAssignAssets,
     segmentCount,
   } = useStore(useShallow(s => ({
     videoId: s.videoId,
     setVideoId: s.setVideoId,
     projectFolderName: s.projectFolderName,
     getAssemblyJSON: s.getAssemblyJSON,
-    exportProjectJSON: s.exportProjectJSON,
     importProjectJSON: s.importProjectJSON,
     clearProject: s.clearProject,
     autoAssignAssets: s.autoAssignAssets,

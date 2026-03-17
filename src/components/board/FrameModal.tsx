@@ -71,7 +71,7 @@ export function FrameModal({ segmentId, onClose }: FrameModalProps) {
 
         {/* Inspector body — scrollable */}
         <div className="flex-1 overflow-y-auto">
-          <SegmentInspector />
+          <SegmentInspector segment={segment} index={index} />
         </div>
       </div>
     </div>
