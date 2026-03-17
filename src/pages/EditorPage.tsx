@@ -153,6 +153,30 @@ export function EditorPage() {
     return () => { flushSaveRef.current(); };
   }, []);
 
+  // Immediate save triggered by the "Save" button — always saves regardless of pending flag
+  const saveNow = useCallback(async () => {
+    const pid = projectId;
+    if (!pid || loadingStateRef.current !== "ready" || isSavingRef.current) return;
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    isSavingRef.current   = true;
+    hasPendingRef.current = false;
+    setSaveStatus("saving");
+    try {
+      const stateJson         = exportProjectJSONRef.current();
+      const currentAudioState = audioStateRef.current;
+      const pendingFiles      = getPendingFiles();
+      await saveProject(pid, stateJson, currentAudioState, pendingFiles);
+      for (const audioId of pendingFiles.keys()) markUploaded(audioId);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus(s => s === "saved" ? "idle" : s), 3000);
+    } catch (e: any) {
+      console.error("Save failed:", e);
+      setSaveStatus("error");
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [projectId]);
+
   // triggerSave only depends on projectId — all other values read via refs
   const triggerSave = useCallback(() => {
     if (!projectId || loadingStateRef.current !== "ready") return;
@@ -247,6 +271,7 @@ export function EditorPage() {
           saveStatus={saveStatus}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          onSaveNow={saveNow}
         />
         <BoardView projectId={projectId!} />
       </div>
@@ -263,6 +288,7 @@ export function EditorPage() {
             saveStatus={saveStatus}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
+            onSaveNow={saveNow}
           />
         }
         moldLibrary={<MediaLibraryPanel />}

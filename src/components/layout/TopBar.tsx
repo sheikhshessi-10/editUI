@@ -1,6 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, FolderOpen, Upload, FilePlus2, Wand2, ArrowLeft, CheckCircle, AlertCircle, Loader2, LayoutTemplate, LayoutGrid } from "lucide-react";
+import { Download, FolderOpen, Upload, FilePlus2, Wand2, ArrowLeft, CheckCircle, AlertCircle, Loader2, LayoutTemplate, LayoutGrid, Check } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../store/useStore";
 import { useFileSystem } from "../../hooks/useFileSystem";
@@ -12,10 +12,12 @@ interface TopBarProps {
   saveStatus?: SaveStatus;
   viewMode?: "timeline" | "board";
   onViewModeChange?: (mode: "timeline" | "board") => void;
+  onSaveNow?: () => Promise<void>;
 }
 
-export function TopBar({ projectId, saveStatus = "idle", viewMode, onViewModeChange }: TopBarProps) {
+export function TopBar({ projectId, saveStatus = "idle", viewMode, onViewModeChange, onSaveNow }: TopBarProps) {
   const navigate = useNavigate();
+  const [nameSaved, setNameSaved] = useState(false);
   const {
     videoId, setVideoId, projectFolderName,
     getAssemblyJSON, importProjectJSON, clearProject, autoAssignAssets,
@@ -147,6 +149,24 @@ export function TopBar({ projectId, saveStatus = "idle", viewMode, onViewModeCha
           placeholder="e.g. 003-valverde"
           className="w-44 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 outline-none focus:border-zinc-500"
         />
+        {projectId && onSaveNow && (
+          <button
+            onClick={async () => {
+              await onSaveNow();
+              setNameSaved(true);
+              setTimeout(() => setNameSaved(false), 2000);
+            }}
+            title="Save name now"
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold border transition ${
+              nameSaved
+                ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                : "border-zinc-600 bg-zinc-800 text-zinc-400 hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+            }`}
+          >
+            <Check size={12} />
+            {nameSaved ? "Saved!" : "Save"}
+          </button>
+        )}
       </div>
 
       <div className="flex-1" />
