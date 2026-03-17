@@ -117,24 +117,59 @@ export function EditorPage() {
   const loadingStateRef = useRef(loadingState);
   loadingStateRef.current = loadingState;
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSavingRef  = useRef(false);
+  const saveTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSavingRef       = useRef(false);
+  const hasPendingRef     = useRef(false); // true if there are unsaved changes
+  const projectIdRef      = useRef(projectId);
+  projectIdRef.current    = projectId;
+
+  // Immediately save whatever is in refs — used on unmount and before nav away
+  const flushSave = useCallback(async () => {
+    const pid = projectIdRef.current;
+    if (!pid || loadingStateRef.current !== "ready" || isSavingRef.current) return;
+    if (!hasPendingRef.current) return;
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    isSavingRef.current  = true;
+    hasPendingRef.current = false;
+    try {
+      const stateJson         = exportProjectJSONRef.current();
+      const currentAudioState = audioStateRef.current;
+      const pendingFiles      = getPendingFiles();
+      await saveProject(pid, stateJson, currentAudioState, pendingFiles);
+      for (const audioId of pendingFiles.keys()) markUploaded(audioId);
+    } catch (e: any) {
+      console.error("Flush save failed:", e);
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, []); // no deps — reads everything via refs
+
+  // Keep a ref to flushSave so the unmount effect never goes stale
+  const flushSaveRef = useRef(flushSave);
+  flushSaveRef.current = flushSave;
+
+  // Flush any pending save when the component unmounts (e.g. user clicks ← Projects)
+  useEffect(() => {
+    return () => { flushSaveRef.current(); };
+  }, []);
 
   // triggerSave only depends on projectId — all other values read via refs
   const triggerSave = useCallback(() => {
     if (!projectId || loadingStateRef.current !== "ready") return;
 
+    hasPendingRef.current = true;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(async () => {
       if (isSavingRef.current) return;
-      isSavingRef.current = true;
+      isSavingRef.current  = true;
+      hasPendingRef.current = false;
       setSaveStatus("saving");
 
       try {
-        const stateJson       = exportProjectJSONRef.current();
+        const stateJson         = exportProjectJSONRef.current();
         const currentAudioState = audioStateRef.current;
-        const pendingFiles    = getPendingFiles();
+        const pendingFiles      = getPendingFiles();
 
         await saveProject(projectId, stateJson, currentAudioState, pendingFiles);
 
@@ -153,12 +188,10 @@ export function EditorPage() {
     }, AUTOSAVE_DELAY_MS);
   }, [projectId]); // ← stable: only re-creates when projectId changes
 
-  // Watch state changes → trigger debounced save
+  // Watch state changes → trigger debounced save (do NOT cancel timer on cleanup —
+  // the unmount effect above handles flushing when navigating away)
   useEffect(() => {
     triggerSave();
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
   }, [storeState, audioImportedAudios, audioTracks, triggerSave]);
 
   // ── Drag and drop ────────────────────────────────────────────────────────
