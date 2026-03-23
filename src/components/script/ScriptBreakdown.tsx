@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { ChevronRight, ChevronLeft, ChevronsRight, Plus, ChevronDown } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../store/useStore";
 import { MOLD_REGISTRY, MOLD_GROUPS } from "../../data/moldRegistry";
 import { MoldSwapPicker } from "../shared/MoldSwapPicker";
+import { EditableWord } from "../shared/EditableWord";
 import type { Segment, WhisperWord } from "../../data/types";
 
 function getWordsInRange(words: WhisperWord[], startS: number, endS: number): WhisperWord[] {
@@ -307,57 +308,6 @@ export function ScriptBreakdown() {
         />
       )}
     </div>
-  );
-}
-
-/* ─── Editable Word ─────────────────────────────────────────────── */
-
-function EditableWord({ word, isEditing, onStartEdit, onCommit, onCancel }: {
-  word: WhisperWord;
-  isEditing: boolean;
-  onStartEdit: () => void;
-  onCommit: (text: string) => void;
-  onCancel: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState(word.word);
-
-  useEffect(() => {
-    if (isEditing) {
-      setDraft(word.word);
-      setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }, 0);
-    }
-  }, [isEditing, word.word]);
-
-  if (isEditing) {
-    return (
-      <input
-        ref={inputRef}
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onKeyDown={e => {
-          if (e.key === "Enter") { e.preventDefault(); onCommit(draft); }
-          if (e.key === "Escape") { e.preventDefault(); onCancel(); }
-        }}
-        onBlur={() => onCommit(draft)}
-        onClick={e => e.stopPropagation()}
-        className="inline rounded border border-emerald-500 bg-zinc-800 px-[3px] py-0 text-[10px] text-emerald-300 outline-none"
-        style={{ width: `${Math.max(draft.length, 3)}ch` }}
-      />
-    );
-  }
-
-  return (
-    <span
-      onDoubleClick={e => { e.stopPropagation(); onStartEdit(); }}
-      className="cursor-text rounded px-[1px] hover:bg-zinc-700/60 hover:text-zinc-200"
-      title="Double-click to fix spelling"
-    >
-      {word.word}
-    </span>
   );
 }
 

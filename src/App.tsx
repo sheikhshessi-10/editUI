@@ -10,6 +10,7 @@ import { AudioLibraryPanel } from "./components/audio/AudioLibraryPanel";
 import { NLETimeline } from "./components/timeline/NLETimeline";
 import { ScriptBreakdown } from "./components/script/ScriptBreakdown";
 import { InspectorPanel } from "./components/inspector/InspectorPanel";
+import { WhiteboardView } from "./components/whiteboard/WhiteboardView";
 
 export default function App() {
   const addSegment = useStore(s => s.addSegment);
@@ -49,6 +50,7 @@ export default function App() {
         audioLibrary={<AudioLibraryPanel />}
         nleTimeline={<NLETimeline />}
         scriptBreakdown={<ScriptBreakdown />}
+        whiteboardView={<WhiteboardView />}
         inspector={<InspectorPanel />}
         statusBar={<StatusBar />}
       />
