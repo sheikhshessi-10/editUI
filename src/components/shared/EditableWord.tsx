@@ -72,6 +72,8 @@ export function EditableWord({
 
   return (
     <span
+      // Prevent text selection on the second mousedown (before dblclick fires)
+      onMouseDown={e => { if (e.detail >= 2) e.preventDefault(); }}
       onDoubleClick={e => { e.preventDefault(); e.stopPropagation(); onStartEdit(); }}
       className={`cursor-text hover:underline hover:decoration-dotted hover:text-zinc-200 ${className}`}
       title="Double-click to fix spelling"
