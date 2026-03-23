@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../store/useStore";
 import { MOLD_REGISTRY, MOLD_GROUPS } from "../../data/moldRegistry";
 import { MoldSwapPicker } from "../shared/MoldSwapPicker";
+import { EditableWord } from "../shared/EditableWord";
 import type { Segment, WhisperWord } from "../../data/types";
 
 function getWordsInRange(words: WhisperWord[], startS: number, endS: number): WhisperWord[] {
@@ -20,7 +21,7 @@ function findOwnerSegment(segments: Segment[], word: WhisperWord): string | null
 export function ScriptBreakdown() {
   const {
     segments, whisperWords, selectedId, selectedType,
-    select, setSegmentBoundary, addSegment, swapSegmentMold,
+    select, setSegmentBoundary, addSegment, swapSegmentMold, updateWhisperWord,
   } = useStore(useShallow(s => ({
     segments: s.segments,
     whisperWords: s.whisperWords,
@@ -30,10 +31,13 @@ export function ScriptBreakdown() {
     setSegmentBoundary: s.setSegmentBoundary,
     addSegment: s.addSegment,
     swapSegmentMold: s.swapSegmentMold,
+    updateWhisperWord: s.updateWhisperWord,
   })));
 
   const [insertMenuAt, setInsertMenuAt] = useState<number | null>(null);
   const [swapPicker, setSwapPicker] = useState<{ segId: string; moldId: string; x: number; y: number } | null>(null);
+  // null = no word being edited; key = word.start timestamp
+  const [editingWordStart, setEditingWordStart] = useState<number | null>(null);
 
   if (whisperWords.length === 0) {
     return (
@@ -130,7 +134,14 @@ export function ScriptBreakdown() {
                   }}
                   title={`${w.word} (${w.start.toFixed(2)}s → ${w.end.toFixed(2)}s)${ownerSeg ? ` — ${mold?.label}` : " — unassigned"}`}
                 >
-                  {w.word}
+                  <EditableWord
+                    word={w}
+                    isEditing={editingWordStart === w.start}
+                    onStartEdit={() => setEditingWordStart(w.start)}
+                    onCommit={newText => { updateWhisperWord(w.start, newText); setEditingWordStart(null); }}
+                    onCancel={() => setEditingWordStart(null)}
+                    className="text-inherit"
+                  />
                 </span>
               );
             })}
@@ -190,7 +201,16 @@ export function ScriptBreakdown() {
                       {words.length > 0 ? (
                         <p className="text-[10px] leading-relaxed text-zinc-400">
                           {words.map((w, wi) => (
-                            <span key={wi}>{w.word}{wi < words.length - 1 ? " " : ""}</span>
+                            <span key={w.start}>
+                              <EditableWord
+                                word={w}
+                                isEditing={editingWordStart === w.start}
+                                onStartEdit={() => setEditingWordStart(w.start)}
+                                onCommit={newText => { updateWhisperWord(w.start, newText); setEditingWordStart(null); }}
+                                onCancel={() => setEditingWordStart(null)}
+                              />
+                              {wi < words.length - 1 ? " " : ""}
+                            </span>
                           ))}
                         </p>
                       ) : (

@@ -123,6 +123,7 @@ interface AppState {
   getAssemblyJSON(): object;
   exportProjectJSON(): string;
   importProjectJSON(json: string): void;
+  updateWhisperWord(wordStart: number, newText: string): void;
   clearProject(): void;
 }
 
@@ -433,6 +434,20 @@ export const useStore = create<AppState>()((set, get) => ({
       const t = { ...s.frameThumbnails };
       if (path === null) delete t[segId]; else t[segId] = path;
       return { frameThumbnails: t };
+    });
+  },
+
+  updateWhisperWord(wordStart, newText) {
+    set(state => {
+      const whisperWords = state.whisperWords.map(w =>
+        w.start === wordStart ? { ...w, word: newText } : w
+      );
+      const segments = state.segments.map(s => ({
+        ...s,
+        startWord: s.startWord?.start === wordStart ? { ...s.startWord, word: newText } : s.startWord,
+        endWord:   s.endWord?.start   === wordStart ? { ...s.endWord,   word: newText } : s.endWord,
+      }));
+      return { whisperWords, segments };
     });
   },
 

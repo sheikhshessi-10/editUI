@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { Segment, WhisperWord } from "../../data/types";
 import { MOLD_REGISTRY } from "../../data/moldRegistry";
+import { EditableWord } from "../shared/EditableWord";
 
 // ── Layout constants (shared with BoardView) ─────────────────────────────────
 export const CARD_W = 220;
@@ -16,9 +18,10 @@ interface FrameCardProps {
   thumbnailUrl?: string;
   whisperWords: WhisperWord[];
   onClick: (segId: string) => void;
+  onUpdateWord: (wordStart: number, newText: string) => void;
 }
 
-export function FrameCard({ segment, index, thumbnailUrl, whisperWords, onClick }: FrameCardProps) {
+export function FrameCard({ segment, index, thumbnailUrl, whisperWords, onClick, onUpdateWord }: FrameCardProps) {
   const mold = MOLD_REGISTRY[segment.moldId];
   const color = mold?.color ?? "#52525b";
   const label = mold?.label ?? segment.moldId;
@@ -26,25 +29,43 @@ export function FrameCard({ segment, index, thumbnailUrl, whisperWords, onClick 
   const x = index * STEP;
   const y = CARD_TOP;
 
+  const [editingWordStart, setEditingWordStart] = useState<number | null>(null);
+
   // Words in this frame's time range
-  const words = whisperWords
-    .filter(w => w.start >= segment.startTimeS && w.start < segment.endTimeS)
-    .map(w => w.word)
-    .join(" ");
+  const frameWords = whisperWords.filter(
+    w => w.start >= segment.startTimeS && w.start < segment.endTimeS
+  );
 
   const durationS = (segment.endTimeS - segment.startTimeS).toFixed(1);
 
   return (
     <>
-      {/* Whisper text box — sits above the card */}
+      {/* Whisper text box — sits above the card; double-click words to fix spelling */}
       <div
         style={{ position: "absolute", left: x, top: y - 95, width: CARD_W, height: 90 }}
         className="flex items-end pb-1 px-1 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <p className="text-[10px] leading-snug text-zinc-500 line-clamp-4">
-          {words || <span className="italic text-zinc-700">no transcript</span>}
-        </p>
+        {frameWords.length > 0 ? (
+          <p className="text-[10px] leading-snug text-zinc-500">
+            {frameWords.map((w, wi) => (
+              <span key={w.start}>
+                <EditableWord
+                  word={w}
+                  isEditing={editingWordStart === w.start}
+                  onStartEdit={() => setEditingWordStart(w.start)}
+                  onCommit={newText => { onUpdateWord(w.start, newText); setEditingWordStart(null); }}
+                  onCancel={() => setEditingWordStart(null)}
+                />
+                {wi < frameWords.length - 1 ? " " : ""}
+              </span>
+            ))}
+          </p>
+        ) : (
+          <p className="text-[10px] leading-snug text-zinc-500">
+            <span className="italic text-zinc-700">no transcript</span>
+          </p>
+        )}
       </div>
 
       {/* Frame card */}

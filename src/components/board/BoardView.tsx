@@ -15,12 +15,13 @@ interface BoardViewProps {
 
 export function BoardView({ projectId }: BoardViewProps) {
   // ── Store state ───────────────────────────────────────────────────────────
-  const { segments, transitions, whisperWords, frameThumbnails } = useStore(
+  const { segments, transitions, whisperWords, frameThumbnails, updateWhisperWord } = useStore(
     useShallow(s => ({
-      segments:         s.segments,
-      transitions:      s.transitions,
-      whisperWords:     s.whisperWords,
-      frameThumbnails:  s.frameThumbnails,
+      segments:          s.segments,
+      transitions:       s.transitions,
+      whisperWords:      s.whisperWords,
+      frameThumbnails:   s.frameThumbnails,
+      updateWhisperWord: s.updateWhisperWord,
     }))
   );
 
@@ -123,6 +124,7 @@ export function BoardView({ projectId }: BoardViewProps) {
                     thumbnailUrl={thumbnailUrls[seg.id]}
                     whisperWords={whisperWords}
                     onClick={id => setFrameModalSegId(id)}
+                    onUpdateWord={updateWhisperWord}
                   />
                 </div>
               ))}
