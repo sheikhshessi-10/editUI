@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronRight, ChevronLeft, ChevronsRight, Plus, ChevronDown } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../store/useStore";
@@ -20,7 +20,7 @@ function findOwnerSegment(segments: Segment[], word: WhisperWord): string | null
 export function ScriptBreakdown() {
   const {
     segments, whisperWords, selectedId, selectedType,
-    select, setSegmentBoundary, addSegment, swapSegmentMold,
+    select, setSegmentBoundary, addSegment, swapSegmentMold, updateWhisperWord,
   } = useStore(useShallow(s => ({
     segments: s.segments,
     whisperWords: s.whisperWords,
@@ -30,10 +30,12 @@ export function ScriptBreakdown() {
     setSegmentBoundary: s.setSegmentBoundary,
     addSegment: s.addSegment,
     swapSegmentMold: s.swapSegmentMold,
+    updateWhisperWord: s.updateWhisperWord,
   })));
 
   const [insertMenuAt, setInsertMenuAt] = useState<number | null>(null);
   const [swapPicker, setSwapPicker] = useState<{ segId: string; moldId: string; x: number; y: number } | null>(null);
+  const [editingWord, setEditingWord] = useState<number | null>(null); // word.start used as key
 
   if (whisperWords.length === 0) {
     return (
@@ -190,7 +192,21 @@ export function ScriptBreakdown() {
                       {words.length > 0 ? (
                         <p className="text-[10px] leading-relaxed text-zinc-400">
                           {words.map((w, wi) => (
-                            <span key={wi}>{w.word}{wi < words.length - 1 ? " " : ""}</span>
+                            <span key={wi}>
+                              <EditableWord
+                                word={w}
+                                isEditing={editingWord === w.start}
+                                onStartEdit={() => setEditingWord(w.start)}
+                                onCommit={(newText) => {
+                                  if (newText.trim() && newText.trim() !== w.word) {
+                                    updateWhisperWord(w.start, newText.trim());
+                                  }
+                                  setEditingWord(null);
+                                }}
+                                onCancel={() => setEditingWord(null)}
+                              />
+                              {wi < words.length - 1 ? " " : ""}
+                            </span>
                           ))}
                         </p>
                       ) : (
@@ -291,6 +307,57 @@ export function ScriptBreakdown() {
         />
       )}
     </div>
+  );
+}
+
+/* ─── Editable Word ─────────────────────────────────────────────── */
+
+function EditableWord({ word, isEditing, onStartEdit, onCommit, onCancel }: {
+  word: WhisperWord;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onCommit: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState(word.word);
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft(word.word);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+    }
+  }, [isEditing, word.word]);
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === "Enter") { e.preventDefault(); onCommit(draft); }
+          if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+        }}
+        onBlur={() => onCommit(draft)}
+        onClick={e => e.stopPropagation()}
+        className="inline rounded border border-emerald-500 bg-zinc-800 px-[3px] py-0 text-[10px] text-emerald-300 outline-none"
+        style={{ width: `${Math.max(draft.length, 3)}ch` }}
+      />
+    );
+  }
+
+  return (
+    <span
+      onDoubleClick={e => { e.stopPropagation(); onStartEdit(); }}
+      className="cursor-text rounded px-[1px] hover:bg-zinc-700/60 hover:text-zinc-200"
+      title="Double-click to fix spelling"
+    >
+      {word.word}
+    </span>
   );
 }
 

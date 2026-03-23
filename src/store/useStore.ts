@@ -105,6 +105,7 @@ interface AppState {
   setSegmentAsset(segId: string, assetKey: AssetKey, filename: string | null): void;
   setSegmentAssetTiming(segId: string, assetKey: AssetKey, timing: AssetTiming | null): void;
   setSegmentBoundary(segId: string, side: "start" | "end", word: WhisperWord): void;
+  updateWhisperWord(wordStart: number, newText: string): void;
   setSegmentCaptionStyle(segId: string, style: string): void;
   setSegmentEmphasisWords(segId: string, words: string[]): void;
   setSegmentTypography(segId: string, line1: string, line2: string): void;
@@ -272,6 +273,20 @@ export const useStore = create<AppState>()(persist((set, get) => ({
         segments: rippled,
         transitions: rebuildTransitions(rippled, state.transitions),
       };
+    });
+  },
+
+  updateWhisperWord(wordStart, newText) {
+    set(state => {
+      const whisperWords = state.whisperWords.map(w =>
+        w.start === wordStart ? { ...w, word: newText } : w
+      );
+      const segments = state.segments.map(s => ({
+        ...s,
+        startWord: s.startWord?.start === wordStart ? { ...s.startWord, word: newText } : s.startWord,
+        endWord: s.endWord?.start === wordStart ? { ...s.endWord, word: newText } : s.endWord,
+      }));
+      return { whisperWords, segments };
     });
   },
 
