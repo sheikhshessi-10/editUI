@@ -72,7 +72,7 @@ export function EditableWord({
 
   return (
     <span
-      onDoubleClick={e => { e.stopPropagation(); onStartEdit(); }}
+      onDoubleClick={e => { e.preventDefault(); e.stopPropagation(); onStartEdit(); }}
       className={`cursor-text hover:underline hover:decoration-dotted hover:text-zinc-200 ${className}`}
       title="Double-click to fix spelling"
     >
