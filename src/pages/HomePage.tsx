@@ -41,8 +41,8 @@ export function HomePage() {
         await ensureAuth();
         const list = await listProjects();
         if (alive) setProjects(list);
-      } catch (e: any) {
-        if (alive) setError(e.message ?? "Failed to load projects");
+      } catch (e) {
+        if (alive) setError((e as Error).message ?? "Failed to load projects");
       } finally {
         if (alive) setLoading(false);
       }
@@ -63,8 +63,8 @@ export function HomePage() {
     try {
       const proj = await createProject("Untitled Project");
       navigate(`/project/${proj.id}`);
-    } catch (e: any) {
-      setError(e.message ?? "Failed to create project");
+    } catch (e) {
+      setError((e as Error).message ?? "Failed to create project");
       setCreating(false);
     }
   }
@@ -75,8 +75,8 @@ export function HomePage() {
     try {
       await deleteProject(proj.id);
       setProjects((prev) => prev.filter((p) => p.id !== proj.id));
-    } catch (e: any) {
-      setError(e.message ?? "Failed to delete project");
+    } catch (e) {
+      setError((e as Error).message ?? "Failed to delete project");
     }
   }
 
@@ -94,8 +94,8 @@ export function HomePage() {
         setProjects((prev) =>
           prev.map((p) => (p.id === proj.id ? { ...p, name: trimmed } : p))
         );
-      } catch (e: any) {
-        setError(e.message ?? "Failed to rename project");
+      } catch (e) {
+        setError((e as Error).message ?? "Failed to rename project");
       }
     }
     setEditingId(null);

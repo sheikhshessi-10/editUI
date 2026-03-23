@@ -74,9 +74,9 @@ export function EditorPage() {
         if (audioState) loadAudioState(audioState);
 
         if (alive) setLoadingState("ready");
-      } catch (e: any) {
+      } catch (e) {
         if (alive) {
-          setLoadError(e.message ?? "Failed to load project");
+          setLoadError((e as Error).message ?? "Failed to load project");
           setLoadingState("error");
         }
       }
@@ -137,7 +137,7 @@ export function EditorPage() {
       const pendingFiles      = getPendingFiles();
       await saveProject(pid, stateJson, currentAudioState, pendingFiles);
       for (const audioId of pendingFiles.keys()) markUploaded(audioId);
-    } catch (e: any) {
+    } catch (e) {
       console.error("Flush save failed:", e);
     } finally {
       isSavingRef.current = false;
@@ -169,7 +169,7 @@ export function EditorPage() {
       for (const audioId of pendingFiles.keys()) markUploaded(audioId);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus(s => s === "saved" ? "idle" : s), 3000);
-    } catch (e: any) {
+    } catch (e) {
       console.error("Save failed:", e);
       setSaveStatus("error");
     } finally {
@@ -203,7 +203,7 @@ export function EditorPage() {
 
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 3000);
-      } catch (e: any) {
+      } catch (e) {
         console.error("Auto-save failed:", e);
         setSaveStatus("error");
       } finally {

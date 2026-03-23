@@ -2,14 +2,22 @@ import { useCallback } from "react";
 import { useStore } from "../store/useStore";
 import { parseWhisperJSON } from "../utils/whisperParser";
 
+interface FSFileEntry { kind: string; getFile(): Promise<File> }
+interface FSDirectoryHandle {
+  name: string;
+  getFileHandle(name: string): Promise<FSFileEntry>;
+  entries(): AsyncIterable<[string, FSFileEntry]>;
+}
+type WindowWithFSA = Window & { showDirectoryPicker(): Promise<FSDirectoryHandle> };
+
 // Module-level handle — survives component re-renders, lost on page reload.
 // This lets any hook/component resolve filenames → actual File objects.
-let _projectDirHandle: FileSystemDirectoryHandle | null = null;
+let _projectDirHandle: FSDirectoryHandle | null = null;
 
 export async function getProjectFile(filename: string): Promise<File | null> {
   if (!_projectDirHandle) return null;
   try {
-    const fh = await (_projectDirHandle as any).getFileHandle(filename);
+    const fh = await _projectDirHandle.getFileHandle(filename);
     return await fh.getFile();
   } catch {
     return null;
@@ -26,12 +34,12 @@ export function useFileSystem() {
     }
 
     try {
-      const dirHandle = await (window as any).showDirectoryPicker();
+      const dirHandle = await (window as WindowWithFSA).showDirectoryPicker();
       _projectDirHandle = dirHandle;
       const files: string[] = [];
       let whisperJSON: Record<string, unknown> | null = null;
 
-      for await (const [name, entry] of (dirHandle as any).entries()) {
+      for await (const [name, entry] of dirHandle.entries()) {
         if (entry.kind === "file") {
           files.push(name);
           if (name === "whisper.json") {

@@ -558,7 +558,7 @@ function AudioTrackLabel({
 }
 
 function AudioClipBlock({
-  clip: _clip, audioName, color, pps, selected, effStartS, effDurS,
+  audioName, color, pps, selected, effStartS, effDurS,
   onSelect, onRemove, onMoveStart, onResizeStart,
 }: {
   clip: AudioClip;

@@ -45,7 +45,7 @@ export function ScriptBreakdown() {
 
   const activeSegId = selectedType === "segment" ? selectedId : null;
 
-  function handleWordClick(word: WhisperWord, _wordIndex: number) {
+  function handleWordClick(word: WhisperWord) {
     if (!activeSegId) return;
     const seg = segments.find(s => s.id === activeSegId);
     if (!seg) return;
@@ -119,7 +119,7 @@ export function ScriptBreakdown() {
               return (
                 <span
                   key={i}
-                  onClick={() => handleWordClick(w, i)}
+                  onClick={() => handleWordClick(w)}
                   className={`inline-block rounded-[3px] px-[4px] py-[1px] text-[10px] leading-snug transition-all ${
                     isClickable ? "cursor-pointer hover:brightness-150 hover:ring-1 hover:ring-white/30" : ""
                   }`}
@@ -242,7 +242,6 @@ export function ScriptBreakdown() {
 
                     {/* Insert + button between this segment and the next */}
                     <InsertButton
-                      insertIndex={i + 1}
                       isOpen={insertMenuAt === i + 1}
                       onToggle={() => setInsertMenuAt(insertMenuAt === i + 1 ? null : i + 1)}
                       onPickMold={(moldId) => { addSegment(moldId, i + 1); setInsertMenuAt(null); }}
@@ -254,7 +253,6 @@ export function ScriptBreakdown() {
               {/* Insert + at the very end if no segments yet */}
               {segments.length === 0 && (
                 <InsertButton
-                  insertIndex={0}
                   isOpen={insertMenuAt === 0}
                   onToggle={() => setInsertMenuAt(insertMenuAt === 0 ? null : 0)}
                   onPickMold={(moldId) => { addSegment(moldId, 0); setInsertMenuAt(null); }}
@@ -296,8 +294,7 @@ export function ScriptBreakdown() {
 
 /* ─── Insert Button + Mold Picker ───────────────────────────────── */
 
-function InsertButton({ insertIndex: _insertIndex, isOpen, onToggle, onPickMold }: {
-  insertIndex: number;
+function InsertButton({ isOpen, onToggle, onPickMold }: {
   isOpen: boolean;
   onToggle: () => void;
   onPickMold: (moldId: string) => void;

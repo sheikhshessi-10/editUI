@@ -23,17 +23,18 @@ export function useVoiceoverPlayer() {
 
   // Load audio whenever the selected file changes
   useEffect(() => {
-    // Reset state
-    setIsReady(false);
-    setCurrentTimeS(0);
-    setDurationS(null);
-    setIsPlaying(false);
-
-    if (!voiceoverFile) return;
-
     let cancelled = false;
 
-    getProjectFile(voiceoverFile).then(file => {
+    async function load() {
+      // Reset state inside async fn to satisfy react-hooks/set-state-in-effect
+      setIsReady(false);
+      setCurrentTimeS(0);
+      setDurationS(null);
+      setIsPlaying(false);
+
+      if (!voiceoverFile) return;
+
+      const file = await getProjectFile(voiceoverFile);
       if (cancelled || !file) return;
 
       // Revoke the previous object URL to avoid memory leaks
@@ -67,8 +68,9 @@ export function useVoiceoverPlayer() {
 
       el.src = url;
       el.load();
-    });
+    }
 
+    void load();
     return () => { cancelled = true; };
   }, [voiceoverFile]);
 

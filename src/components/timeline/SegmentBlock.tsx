@@ -13,7 +13,7 @@ interface Props {
   index: number;
 }
 
-export function SegmentBlock({ segment, index: _index }: Props) {
+export function SegmentBlock({ segment }: Props) {
   const { select, removeSegment, selectedId } = useStore(useShallow(s => ({
     select: s.select,
     removeSegment: s.removeSegment,

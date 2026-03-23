@@ -34,7 +34,7 @@ function extractFilename(path: string): string {
   return parts[parts.length - 1];
 }
 
-function buildAssetDescription(spec: AssetSpec, _moldId: string): string {
+function buildAssetDescription(spec: AssetSpec): string {
   const parts: string[] = [spec.label];
   if (spec.note) parts.push(spec.note);
   if (spec.isContin) parts.push("Continuous asset — uses startFrom.");
@@ -96,7 +96,7 @@ export function generateAssemblyJSON(state: PromptState): object {
         file: filename,
         required: spec.required,
         isContin: spec.isContin,
-        description: buildAssetDescription(spec, seg.moldId),
+        description: buildAssetDescription(spec),
       };
       if (timing) {
         entry.videoTrim = {
