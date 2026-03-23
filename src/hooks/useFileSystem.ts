@@ -2,6 +2,13 @@ import { useCallback } from "react";
 import { useStore } from "../store/useStore";
 import { parseWhisperJSON } from "../utils/whisperParser";
 
+interface FSFileEntry { kind: "file"; getFile(): Promise<File> }
+interface FSDirectoryHandle {
+  name: string;
+  entries(): AsyncIterable<[string, FSFileEntry | { kind: string }]>;
+}
+type WindowWithFSA = Window & { showDirectoryPicker(): Promise<FSDirectoryHandle> };
+
 export function useFileSystem() {
   const loadProject = useStore(s => s.loadProject);
 
@@ -12,15 +19,15 @@ export function useFileSystem() {
     }
 
     try {
-      const dirHandle = await (window as any).showDirectoryPicker();
+      const dirHandle = await (window as WindowWithFSA).showDirectoryPicker();
       const files: string[] = [];
       let whisperJSON: Record<string, unknown> | null = null;
 
-      for await (const [name, entry] of (dirHandle as any).entries()) {
+      for await (const [name, entry] of dirHandle.entries()) {
         if (entry.kind === "file") {
           files.push(name);
           if (name === "whisper.json") {
-            const file = await entry.getFile();
+            const file = await (entry as FSFileEntry).getFile();
             whisperJSON = JSON.parse(await file.text());
           }
         }

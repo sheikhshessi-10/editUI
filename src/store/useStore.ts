@@ -467,7 +467,8 @@ export const useStore = create<AppState>()(persist((set, get) => ({
   merge: (persisted, current) => {
     const stored = persisted as Partial<AppState> | undefined;
     if (!stored) return current;
-    const segments = (stored.segments ?? []).map((s: any) => ({
+    type PersistedSegment = Partial<Segment> & { id: string; moldId: string };
+    const segments = (stored.segments ?? []).map((s: PersistedSegment) => ({
       ...s,
       assetTiming: s.assetTiming ?? {},
       assets: s.assets ?? {},
